@@ -22,6 +22,6 @@ RUN /usr/local/bin/install-plugins.sh kubernetes
 
 # install Maven
 USER root
-RUN apk add --no-cache maven
+RUN apk add --no-cache maven openjdk11
 USER jenkins
 
