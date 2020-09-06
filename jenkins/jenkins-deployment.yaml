@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: jenkins
-        image: localhost:32000/ybushnev/my-jenkins-image:1.0
+        image: localhost:32000/danigiri/jenkins-image:1.0
         env:
           - name: JAVA_OPTS
             value: -Djenkins.install.runSetupWizard=false
