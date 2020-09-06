@@ -1,0 +1,18 @@
+
+
+
+
+trying to run docker
+
+      - name: dind
+        image: docker:stable-dind
+        securityContext:
+          privileged: true
+        volumeMounts:
+          - name: dind-storage
+            mountPath: /var/lib/docker
+      volumes:
+        - name: jenkins-home
+          emptyDir: {}
+        - name: dind-storage
+          emptyDir: {}

@@ -1,5 +1,4 @@
-from jenkinsci/blueocean
-#from jenkins/jenkins:2.60.1
+FROM jenkinsci/blueocean
 
 # Distributed Builds plugins
 RUN /usr/local/bin/install-plugins.sh ssh-slaves
@@ -7,7 +6,6 @@ RUN /usr/local/bin/install-plugins.sh ssh-slaves
 # install Notifications and Publishing plugins
 RUN /usr/local/bin/install-plugins.sh email-ext
 RUN /usr/local/bin/install-plugins.sh mailer
-RUN /usr/local/bin/install-plugins.sh slack
 
 # Artifacts
 RUN /usr/local/bin/install-plugins.sh htmlpublisher
@@ -19,8 +17,11 @@ RUN /usr/local/bin/install-plugins.sh simple-theme-plugin
 # Scaling
 RUN /usr/local/bin/install-plugins.sh kubernetes
 
+# Maven plugin
+# RUN /usr/local/bin/install-plugins.sh maven
+
 # install Maven
 USER root
-#RUN apt-get update && apt-get install -y maven
+RUN apk add --no-cache maven
 USER jenkins
 

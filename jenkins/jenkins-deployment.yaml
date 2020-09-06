@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: jenkins-deployment
+  namespace: jenkins
   labels:
     app: jenkins
 spec:
@@ -16,7 +17,7 @@ spec:
     spec:
       containers:
       - name: jenkins
-        image: ybushnev/my-jenkins-image:1.0
+        image: localhost:32000/ybushnev/my-jenkins-image:1.0
         env:
           - name: JAVA_OPTS
             value: -Djenkins.install.runSetupWizard=false
@@ -26,8 +27,8 @@ spec:
           - name: jnlp-port
             containerPort: 50000
         volumeMounts:
-          - name: jenkins-home
-            mountPath: /var/jenkins_home
+            - name: jenkins-home
+              mountPath: /var/jenkins_home
       volumes:
         - name: jenkins-home
           emptyDir: {}
