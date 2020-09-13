@@ -15,4 +15,42 @@ trying to run docker
         - name: jenkins-home
           emptyDir: {}
         - name: dind-storage
-          emptyDir: {}
+          emptyDir: {}\
+          
+          
+          
+          
+          
+          
+
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: http-ingress
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /
+        backend:
+          serviceName: some-service
+          servicePort: 80
+          
+          
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: dashboard-ingress
+  namespace: kube-system
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: kubernetes-dashboard
+            port:
+              number: 8443
+          

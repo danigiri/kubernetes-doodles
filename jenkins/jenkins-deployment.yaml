@@ -16,19 +16,20 @@ spec:
         app: jenkins
     spec:
       containers:
-      - name: jenkins
-        image: localhost:32000/danigiri/jenkins-image:1.0
-        env:
-          - name: JAVA_OPTS
-            value: -Djenkins.install.runSetupWizard=false
-        ports:
-          - name: http-port
-            containerPort: 8080
-          - name: jnlp-port
-            containerPort: 50000
-        volumeMounts:
-            - name: jenkins-home
-              mountPath: /var/jenkins_home
+        - name: jenkins
+          image: localhost:32000/danigiri/jenkins-image:latest
+          env:
+            - name: JAVA_OPTS
+              value: -Djenkins.install.runSetupWizard=false
+          ports:
+            - name: http-port
+              containerPort: 8080
+            - name: jnlp-port
+              containerPort: 50000
+          volumeMounts:
+            - mountPath: /var/jenkins_home 
+              name: jenkins-home
       volumes:
         - name: jenkins-home
-          emptyDir: {}
+          persistentVolumeClaim:
+            claimName: jenkins-volume-claim
