@@ -1,17 +1,20 @@
-apiVersion: v1
-kind: Pod
+apiVersion: batch/v1
+kind: Job
 metadata:
   name: kaniko-morfeu
   namespace: morfeu
 spec:
-  containers:
-  - name: kaniko
-    image: gcr.io/kaniko-project/executor:latest
-    args:
-      - '--dockerfile=Dockerfile'
-      - '--context=git://github.com/danigiri/morfeu.git'
-      - '--destination=192.168.1.30:32000/morfeu'
-      - '--insecure'
-      - '--cache=true'
-      - "-v=debug"
-  restartPolicy: Never
+  template:
+   spec:
+    containers:
+    - name: kaniko
+      image: gcr.io/kaniko-project/executor:latest
+      args:
+        - '--dockerfile=Dockerfile'
+        - '--context=git://github.com/danigiri/morfeu.git'
+        - '--destination=192.168.1.30:32000/morfeu'
+        - '--insecure'
+        - '--cache=true'
+        - "-v=debug"
+    restartPolicy: Never
+  backoffLimit: 4
