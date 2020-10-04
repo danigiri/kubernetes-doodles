@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    namespace: morfeu
+    name: morfeu
+    labels:
+        app: morfeu
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            app: morfeu
+    template:
+        metadata:
+            labels:
+                app: morfeu
+        spec:
+            containers:
+            - image: localhost:32000/morfeu:latest
+              name: morfeu
+              imagePullPolicy: Always
+              args: [" -D__RESOURCES_PREFIX=file:///var/lib/jetty/"]
