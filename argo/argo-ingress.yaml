@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  namespace: argo
+  name: argo-server
+spec:
+  rules:
+    - host: argo.local.test
+      http:
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: argo-server
+              port:
+                number: 2746
+
+
