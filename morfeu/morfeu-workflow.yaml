@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow                  # new type of k8s spec
+metadata:
+  generateName: morfeu-workflow-    # name of the workflow spec
+spec:
+  entrypoint: morfeu-ci
+  arguments:
+    parameters:
+    - name: repo
+      value: https://github.com/danigiri/morfeu.git
+    - name: revision
+      value: master
+  templates:
+  - name: morfeu-ci            
+    steps:
+    - - name: checkout
+        template: checkout
+  - name: checkout
+    inputs:
+      artifacts:
+      - name: source
+        path: /src
+        git:
+          repo: "{{workflow.parameters.repo}}"
+          revision: "{{workflow.parameters.revision}}"
+    outputs:
+      artifacts:
+      - name: source
+        path: /src
+    container:
+      image: alpine/git
+      command: ["/bin/sh", "-c"]
+      args: ["cd /src && git status && ls -l"]
