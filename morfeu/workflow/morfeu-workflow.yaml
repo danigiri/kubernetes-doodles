@@ -5,6 +5,9 @@ metadata:
   namespace: argo
 spec:
   entrypoint: morfeu-ci
+  volumes:
+  - name: workdir
+    emptyDir: {}
   arguments:
     parameters:
     - name: repo
@@ -12,7 +15,7 @@ spec:
     - name: revision
       value: master
   templates:
-  - name: morfeu-ci            
+  - name: morfeu-ci
     steps:
     - - name: checkout
         template: checkout
@@ -27,8 +30,11 @@ spec:
     outputs:
       artifacts:
       - name: source
-        path: /src
+        path: /mnt/vol
     container:
       image: alpine/git
       command: ["/bin/sh", "-c"]
       args: ["cd /src && git status && ls -l"]
+      volumeMounts:
+        - name: workdir
+          mountPath: /mnt/vol
