@@ -1,4 +1,4 @@
-apiVersion: extensions/v1beta1
+apiVersion: extensions/v1
 kind: Ingress
 metadata:
   name: argocd-server-ingress
@@ -9,9 +9,13 @@ metadata:
     nginx.ingress.kubernetes.io/ssl-passthrough: "true"
 spec:
   rules:
-  - host: argocd.local.test
-    http:
-      paths:
-      - backend:
-          serviceName: argocd-server
-          servicePort: https
+    - host: argocd.local.test
+      http:
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: argocd-server
+              port:
+                number: 443
