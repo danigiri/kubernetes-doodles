@@ -1,57 +1,61 @@
 apiVersion: argoproj.io/v1alpha1
-kind: Workflow                  # new type of k8s spec
+kind: CronWorkflow
 metadata:
-  generateName: morfeu-workflow-    # name of the workflow spec
+  generateName: morfeu-workflow-            # name of the workflow spec
   namespace: argo
 spec:
-  entrypoint: morfeu-ci
-  volumes:
-  - name: workdir
-    emptyDir: {}
-  arguments:
-    parameters:
-    - name: registry
-      value: 192.168.1.30:32000
-    - name: repo
-      value: https://github.com/danigiri/morfeu.git
-    - name: revision
-      value: master
-    - name: versionURL
-      value: morfeu-service.morfeu.svc.cluster.local:8980/metadata/version.txt
-  templates:
-  - name: morfeu-ci
-    steps:
-    - - name: checkout
-        template: checkout
-    - - name: build
-        template: build
-        when: "'{{steps.checkout.outputs.result}}' == 'go'"
-  - name: checkout
-    inputs:
-      artifacts:
-      - name: source
-        path: /src
-        git:
-          repo: "{{workflow.parameters.repo}}"
-          revision: "{{workflow.parameters.revision}}"
-    outputs:
-      artifacts:
-      - name: source
-        path: /mnt/vol
-    container:
-      image: frolvlad/alpine-bash
-      command: ["/bin/bash", "-c"]
-      args: ["cd /src && apk add git curl && if [[ $(curl -s '{{workflow.parameters.versionURL}}') != $(git describe --abbrev=0) ]]; then echo go; else echo stop; fi"]
-      volumeMounts:
-        - name: workdir
-          mountPath: /mnt/vol
-  - name: build
-    container:
-      image: gcr.io/kaniko-project/executor:latest
-      args:
-        - '--dockerfile=Dockerfile'
-        - '--context={{workflow.parameters.repo}}'
-        - '--destination={{workflow.parameters.registry}}/morfeu'
-        - '--insecure'
-        - '--cache=true'
-        - "--verbosity=info"
+  schedule: "*/2 * * * *"
+  concurrencyPolicy: Forbid
+  workflowSpec:
+    entrypoint: morfeu-ci
+    parallelism: 1                            # only one instance of the workflow at the time
+    volumes:
+    - name: workdir
+      emptyDir: {}
+    arguments:
+      parameters:
+      - name: registry
+        value: 192.168.1.30:32000
+      - name: repo							# no protocol in front!
+        value: github.com/danigiri/morfeu.git
+      - name: revision
+        value: master
+      - name: versionURL
+        value: morfeu-service.morfeu.svc.cluster.local:8980/metadata/version.txt
+    templates:
+    - name: morfeu-ci
+      steps:
+      - - name: checkout
+          template: checkout
+      - - name: build
+          template: build
+          when: "'{{steps.checkout.outputs.result}}' == 'go'"
+    - name: checkout
+      inputs:
+        artifacts:
+        - name: source
+          path: /src
+          git:
+            repo: "https://{{workflow.parameters.repo}}"
+            revision: "{{workflow.parameters.revision}}"
+      outputs:
+        artifacts:
+        - name: source
+          path: /mnt/vol
+      container:
+        image: frolvlad/alpine-bash
+        command: ["/bin/bash", "-c"]
+        args: ["cd /src && apk -q add git curl && if [[ $(curl -s '{{workflow.parameters.versionURL}}') != $(git describe --abbrev=0) ]]; then echo go; else echo stop; fi"]
+        volumeMounts:
+          - name: workdir
+            mountPath: /mnt/vol
+    - name: build
+      container:
+        image: gcr.io/kaniko-project/executor:latest
+        args:
+          - '--dockerfile=Dockerfile'
+          - '--context=git://{{workflow.parameters.repo}}'
+          - '--destination=registry.container-registry.svc.cluster.local:5000/morfeu'
+          - '--insecure'
+          - '--cache=true'
+          - "--verbosity=debug"
