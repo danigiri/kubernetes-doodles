@@ -30,10 +30,14 @@ spec:
       - - name: build
           template: build
           when: "'{{steps.checkout.outputs.result}}' == 'go'"
+          arguments:
+            artifacts:
+              - name: source
+                from: "{{steps.checkout.outputs.artifacts.source}}"
     - name: checkout
       inputs:
         artifacts:
-        - name: source
+        - name: getsource
           path: /src
           git:
             repo: "https://{{workflow.parameters.repo}}"
@@ -44,18 +48,22 @@ spec:
           path: /mnt/vol
       container:
         image: frolvlad/alpine-bash
-        command: ["/bin/bash", "-c"]
+        command: ["/bin/bash", "-c"]  # grep '<version>' pom.xml|head -1|sed 's/version>//g'|sed 's/<//'|sed 's/<\///'|tr -d '[:space:]'
         args: ["cd /src && apk -q add git curl && if [[ $(curl -s '{{workflow.parameters.versionURL}}') != $(git describe --abbrev=0) ]]; then echo go; else echo stop; fi"]
         volumeMounts:
           - name: workdir
             mountPath: /mnt/vol
     - name: build
+      inputs:
+        artifacts:
+          - name: source
+            path: /src
       container:
         image: gcr.io/kaniko-project/executor:latest
         args:
           - '--dockerfile=Dockerfile'
-          - '--context=git://{{workflow.parameters.repo}}'
+          - '--context=dir:///src/vol/src'
           - '--destination=registry.container-registry.svc.cluster.local:5000/morfeu'
           - '--insecure'
           - '--cache=true'
-          - "--verbosity=debug"
+          - '--verbosity=info'
