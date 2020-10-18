@@ -48,8 +48,8 @@ spec:
           path: /mnt/vol
       container:
         image: frolvlad/alpine-bash
-        command: ["/bin/bash", "-c"]  # grep '<version>' pom.xml|head -1|sed 's/version>//g'|sed 's/<//'|sed 's/<\///'|tr -d '[:space:]'
-        args: ["cd /src && apk -q add git curl && if [[ $(curl -s '{{workflow.parameters.versionURL}}') != $(git describe --abbrev=0) ]]; then echo go; else echo stop; fi"]
+        command: ["/bin/bash", "-c"] # we curl the version from the live pod, compare it with the pom.xml contents
+        args: ["cd /src && apk -q add git curl && if [[ '<version>'$(curl -s '{{workflow.parameters.versionURL}}')'</version>' != $(grep '<version>' pom.xml|head -1|tr -d '[:space:]') ]]; then mv /src/* /mnt/vol/ && echo go; else echo stop; fi"]
         volumeMounts:
           - name: workdir
             mountPath: /mnt/vol
@@ -62,8 +62,14 @@ spec:
         image: gcr.io/kaniko-project/executor:latest
         args:
           - '--dockerfile=Dockerfile'
-          - '--context=dir:///src/vol/src'
+          - '--context=dir:///src'
           - '--destination=registry.container-registry.svc.cluster.local:5000/morfeu'
           - '--insecure'
           - '--cache=true'
           - '--verbosity=info'
+
+#        image: frolvlad/alpine-bash
+#        command: ["/bin/bash", "-c"]
+#        args: ["cd /src && pwd && ls -l && cd / && pwd && ls -l && cd /mnt && pwd && ls -l"]
+
+
