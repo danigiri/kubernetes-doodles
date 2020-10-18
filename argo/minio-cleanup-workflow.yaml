@@ -7,7 +7,7 @@ spec:
   schedule: "1 5 * * *"
   concurrencyPolicy: Forbid
   workflowSpec:
-    entrypoint: remove
+    entrypoint: build
     parallelism: 1                            # only one instance of the workflow at the time
     arguments:
       parameters:
@@ -15,10 +15,8 @@ spec:
         value: registry.container-registry.svc.cluster.local:5000
       - name: repo
         value: git://github.com/danigiri/kubernetes-doodles.git
-      - name: revision
-        value: master
       - name: dockerfilePath
-        value: argo/minio
+        value: ./argo/minio
     templates:
     - name: morfeu-ci
       steps:
@@ -31,11 +29,13 @@ spec:
         image: gcr.io/kaniko-project/executor:latest
         args:
           - '--dockerfile=Dockerfile'
-          - '--context={{workflow.parameters.revision}}'
+          - '--context={{workflow.parameters.repo}}'
           - '--context-sub-path={{workflow.parameters.dockerfilePath}}'
           - '--destination={{workflow.parameters.registry}}/minio-cleanup'
           - '--insecure'
           - '--cache=true'
           - '--verbosity=info'
     - name: cleanup
-      image: minio-cleanup:latest
+      container:
+        image: minio-cleanup:latest
+        command: ['/cleanup.sh']
