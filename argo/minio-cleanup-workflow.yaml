@@ -7,7 +7,7 @@ spec:
   schedule: "1 5 * * *"
   concurrencyPolicy: Forbid
   workflowSpec:
-    entrypoint: build
+    entrypoint: minio-cleanup
     parallelism: 1                            # only one instance of the workflow at the time
     arguments:
       parameters:
@@ -18,7 +18,7 @@ spec:
       - name: dockerfilePath
         value: ./argo/minio
     templates:
-    - name: morfeu-ci
+    - name: minio-cleanup
       steps:
       - - name: build
           template: build
