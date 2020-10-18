@@ -37,5 +37,5 @@ spec:
           - '--verbosity=info'
     - name: cleanup
       container:
-        image: minio-cleanup:latest
+        image: 'localhost:32000/minio-cleanup:latest'
         command: ['/cleanup.sh']
