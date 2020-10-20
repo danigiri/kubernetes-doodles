@@ -13,4 +13,4 @@ RUN ["chmod", "a+x", "/cleanup.sh"]
 # WARNING this nukes the content of all the bucket WARNING
 # WARNING this nukes the content of all the bucket WARNING
 # WARNING this nukes the content of all the bucket WARNING
-ENTRYPOINT ["/cleanup.sh", "${MINIO_SERVICE_URL}"]
+ENTRYPOINT ["/cleanup.sh", ${MINIO_SERVICE_URL}]
