@@ -40,6 +40,8 @@ spec:
         image: 'localhost:32000/minio-cleanup:latest'
         command: ['/cleanup.sh']
         env:
+          - name: MINIO_SERVICE_URL
+            value: "http://minio:9000"
           - name: ACCESS_KEY
             valueFrom:
               secretKeyRef:

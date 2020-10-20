@@ -1,7 +1,6 @@
 #!/bin/sh
 
-MINIO_SERVICE_URL="$1"
-mc alias set minio-local "$MINIO_SERVICE_URL" ${ACCESS_KEY} ${SECRET_KEY}
+mc alias set minio-local ${MINIO_SERVICE_URL} ${ACCESS_KEY} ${SECRET_KEY}
 # WARNING this nukes the content of all the bucket WARNING
 # WARNING this nukes the content of all the bucket WARNING
 # WARNING this nukes the content of all the bucket WARNING

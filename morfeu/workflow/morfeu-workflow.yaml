@@ -12,6 +12,15 @@ spec:
     volumes:
     - name: workdir
       emptyDir: {}
+    volumeClaimTemplates:
+      - metadata:
+          name: source
+        spec:
+          accessModes: [ "ReadWriteOnce" ]
+          resources:
+            requests:
+              storage: 10Mi
+    onExit: save-code
     arguments:
       parameters:
       - name: registry
@@ -68,6 +77,30 @@ spec:
           - '--cache=true'
           - '--verbosity=info'
 
+    - name: save-code
+      container:
+        image: alpine:3
+        command:
+          - "true"
+        volumeMounts:
+          - name: source
+            mountPath: /source
+      outputs:
+        artifacts:
+          - name: morfeu-source
+            path: /source/morfeu-source
+            s3:
+              key: morfeu-source
+              bucket: my-bucket
+              endpoint: minio:9000
+              insecure: true
+              accessKeySecret:
+                name: my-minio-cred
+                key: accesskey
+              secretKeySecret:
+                name: my-minio-cred
+                key: secretkey
+    
 #        image: frolvlad/alpine-bash
 #        command: ["/bin/bash", "-c"]
 #        args: ["cd /src && pwd && ls -l && cd / && pwd && ls -l && cd /mnt && pwd && ls -l"]
