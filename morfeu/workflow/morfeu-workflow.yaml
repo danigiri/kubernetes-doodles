@@ -9,9 +9,6 @@ spec:
   workflowSpec:
     entrypoint: morfeu-ci
     parallelism: 1                            # only one instance of the workflow at the time
-    volumes:
-    - name: workdir
-      emptyDir: {}
     volumeClaimTemplates:
       - metadata:
           name: source
@@ -34,49 +31,90 @@ spec:
     templates:
     - name: morfeu-ci
       steps:
+      - - name: load-source
+          template: load-source
       - - name: checkout
           template: checkout
       - - name: build
           template: build
           when: "'{{steps.checkout.outputs.result}}' == 'go'"
-          arguments:
-            artifacts:
-              - name: source
-                from: "{{steps.checkout.outputs.artifacts.source}}"
-    - name: checkout
-      inputs:
-        artifacts:
-        - name: getsource
-          path: /src
-          git:
-            repo: "https://{{workflow.parameters.repo}}"
-            revision: "{{workflow.parameters.revision}}"
-      outputs:
-        artifacts:
-        - name: source
-          path: /mnt/vol
-      container:
-        image: frolvlad/alpine-bash
-        command: ["/bin/bash", "-c"] # we curl the version from the live pod, compare it with the pom.xml contents
-        args: ["cd /src && apk -q add git curl && if [[ '<version>'$(curl -s '{{workflow.parameters.versionURL}}')'</version>' != $(grep '<version>' pom.xml|head -1|tr -d '[:space:]') ]]; then mv /src/* /mnt/vol/ && echo go; else echo stop; fi"]
-        volumeMounts:
-          - name: workdir
-            mountPath: /mnt/vol
-    - name: build
+    - name: load-source
       inputs:
         artifacts:
           - name: source
-            path: /src
+            path: /source/morfeu-source
+            optional: true
+            s3:
+              key: morfeu-source
+              bucket: my-bucket
+              endpoint: minio:9000
+              insecure: true
+              accessKeySecret:
+                name: my-minio-cred
+                key: accesskey
+              secretKeySecret:
+                name: my-minio-cred
+                key: secretkey
+      container:
+        image: alpine:3
+        command:
+          - mkdir
+          - -pv
+          - /source/morfeu-source
+        volumeMounts:
+          - name: source
+            mountPath: /source
+    - name: checkout
+      script:
+        image: alpine:3 # we curl the version from the live pod, compare it with the pom.xml contents
+        command:
+          - sh
+        source: |
+          apk -q add git curl
+          cd /source/morfeu-source
+          if [ ! -d morfeu ]; then
+              git clone -q https://{{workflow.parameters.repo}} 
+              cd morfeu && git checkout -q {{workflow.parameters.revision}}
+              echo go
+              exit 0
+          fi
+          cd morfeu
+          deployed_='<version>'$(curl -s '{{workflow.parameters.versionURL}}')'</version>'
+          local_=$(grep '<version>' pom.xml|head -1|tr -d '[:space:]')
+          if [ "$deployed_" != "$local_" ]; then
+              git fetch -q --all --tags 
+              git checkout -q {{workflow.parameters.revision}}
+              git pull -q
+              echo 'go'
+              exit 0
+          fi
+          changed_=0
+          git fetch -q --all --tags
+          git checkout -q {{workflow.parameters.revision}}
+          git status | grep -q -v 'Your branch is behind' && changed_=1
+          if [ $changed_ -eq 1 ]; then
+              git pull -q
+              echo 'go'
+          else
+              echo 'stop'
+          fi
+        volumeMounts:
+          - name: source
+            mountPath: /source
+
+    - name: build
       container:
         image: gcr.io/kaniko-project/executor:latest
         args:
           - '--dockerfile=Dockerfile'
-          - '--context=dir:///src'
+          - '--context=dir:///source/morfeu-source/morfeu'
           - '--destination={{workflow.parameters.registry}}/morfeu'
           - '--insecure'
           - '--cache=true'
           - '--verbosity=info'
-
+        volumeMounts:
+          - name: source
+            mountPath: /source
     - name: save-code
       container:
         image: alpine:3
@@ -87,7 +125,7 @@ spec:
             mountPath: /source
       outputs:
         artifacts:
-          - name: morfeu-source
+          - name: source
             path: /source/morfeu-source
             s3:
               key: morfeu-source
