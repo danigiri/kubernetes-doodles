@@ -91,7 +91,7 @@ spec:
           changed_=0
           git fetch -q --all --tags
           git checkout -q {{workflow.parameters.revision}}
-          git status | grep -q -v 'Your branch is behind' && changed_=1
+          git status | grep -q 'Your branch is behind' && changed_=1
           if [ $changed_ -eq 1 ]; then
               git pull -q
               echo 'go'
