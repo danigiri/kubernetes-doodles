@@ -17,6 +17,10 @@ spec:
           resources:
             requests:
               storage: 10Mi
+    volumes:
+      - name: argocd-secrets-vol
+        secret:
+          secretName: argocd-secret
     onExit: save-code
     arguments:
       parameters:
@@ -28,6 +32,8 @@ spec:
         value: master
       - name: versionURL
         value: morfeu-service.morfeu.svc.cluster.local:8980/metadata/version.txt
+      - name: argocdServer
+        value: argocd-server.argocd.svc.cluster.local:443
     templates:
     - name: morfeu-ci
       steps:
@@ -37,6 +43,9 @@ spec:
           template: checkout
       - - name: build
           template: build
+          when: "'{{steps.checkout.outputs.result}}' == 'go'"
+      - - name: redeploy
+          template: redeploy
           when: "'{{steps.checkout.outputs.result}}' == 'go'"
     - name: load-source
       inputs:
@@ -64,6 +73,7 @@ spec:
         volumeMounts:
           - name: source
             mountPath: /source
+
     - name: checkout
       script:
         image: alpine:3 # we curl the version from the live pod, compare it with the pom.xml contents
@@ -108,13 +118,33 @@ spec:
         args:
           - '--dockerfile=Dockerfile'
           - '--context=dir:///source/morfeu-source/morfeu'
-          - '--destination={{workflow.parameters.registry}}/morfeu'
+          - '--destination={{workflow.parameters.registry}}/morfeu'  # :{{workflow.uid}}
           - '--insecure'
           - '--cache=true'
           - '--verbosity=info'
+          - '--use-new-run'
         volumeMounts:
           - name: source
             mountPath: /source
+
+    - name: redeploy
+      script:
+        image: argoproj/argocd
+        command:
+          - sh
+        source: |
+          argocd login {{workflow.parameters.argocdServer}} --username admin --password $ARGOCD_PASSWORD --insecure
+          argocd app actions run morfeu-deploy restart --server {{workflow.parameters.argocdServer}} --namespace morfeu --group apps --kind Deployment --insecure
+        env:
+          - name: ARGOCD_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: argocd-secret
+                key: admin.password
+        volumeMounts:
+          - name: argocd-secrets-vol
+            mountPath: '/secrets/'
+
     - name: save-code
       container:
         image: alpine:3
