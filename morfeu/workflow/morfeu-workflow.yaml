@@ -134,6 +134,7 @@ spec:
           - sh
         source: |
           argocd login {{workflow.parameters.argocdServer}} --username admin --password $ARGOCD_PASSWORD --insecure
+          argocd app actions list morfeu-deploy --namespace morfeu --group apps --kind Deployment --insecure
           argocd app actions run morfeu-deploy restart --server {{workflow.parameters.argocdServer}} --namespace morfeu --group apps --kind Deployment --insecure
         env:
           - name: ARGOCD_PASSWORD
