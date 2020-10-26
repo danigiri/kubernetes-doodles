@@ -4,9 +4,13 @@ argocd app create morfeu-deployment \
 	--repo https://github.com/danigiri/kubernetes-doodles.git \
 	--path morfeu \
 	--dest-namespace morfeu 
-	--dest-server https://kubernetes.default.svc
+	--dest-server https://kubernetes.default.svc \
 	--auto-prune \
-	-sync-policy automated
+	-sync-policy automated \
+	--sync-option CreateNamespace=true
+
+# list actions
+argocd app actions list morfeu-deploy --namespace morfeu --group apps --kind Deployment --insecure
 
 # workflow for CI
 # secret
