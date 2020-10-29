@@ -1,0 +1,182 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: build-workflow-template
+  namespace: argo
+spec:
+    entrypoint: cicd-start
+    parallelism: 1                            # only one instance of the workflow at the time
+    volumeClaimTemplates:
+      - metadata:
+          name: source
+        spec:
+          accessModes: [ "ReadWriteMany" ]
+          resources:
+            requests:
+              storage: 10Mi
+    volumes:
+      - name: argocd-secrets-vol
+        secret:
+          secretName: argocd-secret
+    onExit: save-code
+    arguments:
+      parameters:
+      - name: registry
+        value: registry.container-registry.svc.cluster.local:5000
+      - name: repo							# no protocol in front!
+        value: github.com/danigiri/morfeu.git
+      - name: revision
+        value: master
+      - name: versionURL
+        value: morfeu-service.morfeu.svc.cluster.local:8980/metadata/version.txt
+      - name: argocdServer
+        value: argocd-server.argocd.svc.cluster.local:443
+      - name: deploymentNamespace
+        value: morfeu
+      - name: deploymentName
+        value: 'morfeu-deploy'
+      - name: appName
+        value: morfeu
+
+    templates:
+    - name: cicd-start
+      steps:
+      - - name: load-source
+          template: load-source
+      - - name: checkout
+          template: checkout
+      - - name: build
+          template: build
+          when: "'{{steps.checkout.outputs.result}}' == 'go'"
+      - - name: redeploy
+          template: redeploy
+          when: "'{{steps.checkout.outputs.result}}' == 'go'"
+    - name: load-source
+      inputs:
+        artifacts:
+          - name: source
+            path: /source/{{workflow.parameters.appName}}-source
+            optional: true
+            s3:
+              key: '{{workflow.parameters.appName}}-source'
+              bucket: my-bucket
+              endpoint: minio:9000
+              insecure: true
+              accessKeySecret:
+                name: my-minio-cred
+                key: accesskey
+              secretKeySecret:
+                name: my-minio-cred
+                key: secretkey
+      container:
+        image: alpine:3
+        command:
+          - mkdir
+          - -pv
+          - /source/{{workflow.parameters.appName}}-source
+        volumeMounts:
+          - name: source
+            mountPath: /source
+
+    - name: checkout
+      script:
+        image: alpine:3 # we curl the version from the live pod, compare it with the pom.xml contents
+        command:
+          - sh
+        source: |
+          apk -q add git curl
+          cd /source/{{workflow.parameters.appName}}-source
+          if [ ! -d {{workflow.parameters.appName}} ]; then
+              git clone -q https://{{workflow.parameters.repo}} 
+              cd {{workflow.parameters.appName}} && git checkout -q {{workflow.parameters.revision}}
+              echo go
+              exit 0
+          fi
+          cd {{workflow.parameters.appName}}
+          deployed_='<version>'$(curl -s '{{workflow.parameters.versionURL}}')'</version>'
+          local_=$(grep '<version>' pom.xml|head -1|tr -d '[:space:]')
+          if [ "$deployed_" != "$local_" ]; then
+              git fetch -q --all --tags 
+              git checkout -q {{workflow.parameters.revision}}
+              git pull -q
+              echo 'go'
+              exit 0
+          fi
+          changed_=0
+          git fetch -q --all --tags
+          git checkout -q {{workflow.parameters.revision}}
+          git status | grep -q 'Your branch is behind' && changed_=1
+          if [ $changed_ -eq 1 ]; then
+              git pull -q
+              echo 'go'
+          else
+              echo 'stop'
+          fi
+        volumeMounts:
+          - name: source
+            mountPath: /source
+
+    - name: build
+      container:
+        image: gcr.io/kaniko-project/executor:latest
+        args:
+          - '--dockerfile=Dockerfile'
+          - '--context=dir:///source/{{workflow.parameters.appName}}-source/{{workflow.parameters.appName}}'
+          - '--destination={{workflow.parameters.registry}}/{{workflow.parameters.appName}}'  # :{{workflow.uid}}
+          - '--insecure'
+          - '--cache=true'
+          - '--verbosity=info'
+          - '--use-new-run'
+        volumeMounts:
+          - name: source
+            mountPath: /source
+
+    - name: redeploy
+      script:
+        image: argoproj/argocd
+        command:
+          - sh
+          - '-x'
+        source: |
+          argocd login {{workflow.parameters.argocdServer}} --username admin --password $ARGOCD_PASSWORD --insecure
+          argocd app actions list {{workflow.parameters.deploymentName}} --namespace {{workflow.parameters.deploymentNamespace}} --group apps --kind Deployment --insecure
+          argocd app actions run {{workflow.parameters.deploymentName}} restart --namespace {{workflow.parameters.deploymentNamespace}} --group apps --kind Deployment --insecure
+        env:
+          - name: ARGOCD_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: argocd-secret
+                key: admin.password
+        volumeMounts:
+          - name: argocd-secrets-vol
+            mountPath: '/secrets/'
+
+    - name: save-code
+      container:
+        image: alpine:3
+        command:
+          - "true"
+        volumeMounts:
+          - name: source
+            mountPath: /source
+      outputs:
+        artifacts:
+          - name: source
+            path: /source/{{workflow.parameters.appName}}-source
+            s3:
+              key: '{{workflow.parameters.appName}}-source'
+              bucket: my-bucket
+              endpoint: minio:9000
+              insecure: true
+              accessKeySecret:
+                name: my-minio-cred
+                key: accesskey
+              secretKeySecret:
+                name: my-minio-cred
+                key: secretkey
+    
+#        image: frolvlad/alpine-bash
+#        command: ["/bin/bash", "-c"]
+#        args: ["cd /src && pwd && ls -l && cd / && pwd && ls -l && cd /mnt && pwd && ls -l"]
+
+
