@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-    namespace: morfeu
+    namespace: snow-package
     name: snow-package
     labels:
         app: snow-package
@@ -28,3 +28,10 @@ spec:
               name: snow-package
               imagePullPolicy: Always
               args: [" -D__RESOURCES_PREFIX=file:///var/lib/jetty/"]
+              volumeMounts:
+                - name: site-volume
+                  mountPath: /site-source
+        volumes:
+         - name: site-volume
+           persistentVolumeClaim:
+             claimName: snow-package-pvc

@@ -1,10 +1,10 @@
 apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
 metadata:
-  generateName: morfeu-workflow-            # name of the workflow spec
+  generateName: snow-package-workflow-            # name of the workflow spec
   namespace: argo
 spec:
-  schedule: "*/10 18-23,0-2 * * *"
+  schedule: "5/10 18-23,0-2 * * *"
   concurrencyPolicy: Forbid
   workflowSpec:
     entrypoint: cicd-start

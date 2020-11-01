@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: snow-package-hostpath-provisioner
+  labels:
+    k8s-app: snow-package-hostpath-provisioner
+  namespace: snow-package
+spec:
+  replicas: 1
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      k8s-app: snow-package-hostpath
+  template:
+    metadata:
+      labels:
+        k8s-app: snow-package-hostpath
+    spec:
+      containers:
+        - name: snow-package-hostpath-provisioner
+          image: cdkbot/hostpath-provisioner-amd64:1.0.0
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: PV_DIR
+              value: /var/lib/snow-package
+            - name: PV_RECLAIM_POLICY
+              value: Retain
+          volumeMounts:
+            - name: pv-volume
+              mountPath: /var/lib/snow-package
+      volumes:
+        - name: pv-volume
+          hostPath:
+            path: /var/lib/snow-package
+---
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: snow-package-hostpath
+#  annotations:
+#    storageclass.kubernetes.io/is-default-class: "true"
+provisioner: snow-package/hostpath
