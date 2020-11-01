@@ -4,7 +4,11 @@ metadata:
   name: snow-package-hostpath-provisioner
   labels:
     k8s-app: snow-package-hostpath-provisioner
-  namespace: snow-package
+    app.kubernetes.io/name: snow-package-hostpath-provisioner
+    app.kubernetes.io/component: storage
+    app.kubernetes.io/part-of: snowpackage-site
+    app.kubernetes.io/managed-by: argocd
+  namespace: snowpackage-site
 spec:
   replicas: 1
   revisionHistoryLimit: 0
@@ -39,9 +43,9 @@ spec:
 kind: StorageClass
 apiVersion: storage.k8s.io/v1
 metadata:
-  name: snow-package-hostpath
+  name: snowpackage-site-hostpath
 #  annotations:
 #    storageclass.kubernetes.io/is-default-class: "true"
-provisioner: snow-package/hostpath
+provisioner: snowpackage-site/hostpath
 reclaimPolicy: Retain
 

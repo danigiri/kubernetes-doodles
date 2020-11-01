@@ -1,8 +1,8 @@
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: snow-package-pvc
-  namespace: snow-package
+  name: snowpackage-site-pvc
+  namespace: snowpackage-site
 spec:
   accessModes:
     - ReadWriteMany
@@ -10,3 +10,4 @@ spec:
   resources:
     requests:
       storage: 50Mi
+  storageClassName: snowpackage-site-hostpath

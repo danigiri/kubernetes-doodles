@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-    namespace: snow-package
+    namespace: snowpackage-site
     name: snow-package
     labels:
         app: snow-package
@@ -34,4 +34,4 @@ spec:
         volumes:
          - name: site-volume
            persistentVolumeClaim:
-             claimName: snow-package-pvc
+             claimName: snowpackage-site-pvc

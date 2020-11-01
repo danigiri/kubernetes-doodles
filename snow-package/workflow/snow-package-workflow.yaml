@@ -21,7 +21,7 @@ spec:
       - name: argocdServer
         value: argocd-server.argocd.svc.cluster.local:443
       - name: deploymentNamespace
-        value: morfeu
+        value: snowpackage-site
       - name: deploymentName
         value: snow-package-deployment
       - name: appName
