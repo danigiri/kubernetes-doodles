@@ -1,10 +1,10 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: snow-package-hostpath-provisioner
+  name: snowpackage-site-hostpath-provisioner
   labels:
-    k8s-app: snow-package-hostpath-provisioner
-    app.kubernetes.io/name: snow-package-hostpath-provisioner
+    k8s-app: snowpackage-site-hostpath-provisioner
+    app.kubernetes.io/name: snowpackage-site-hostpath-provisioner
     app.kubernetes.io/component: storage
     app.kubernetes.io/part-of: snowpackage-site
     app.kubernetes.io/managed-by: argocd
@@ -21,7 +21,7 @@ spec:
         k8s-app: snow-package-hostpath
     spec:
       containers:
-        - name: snow-package-hostpath-provisioner
+        - name: snowpackage-site-hostpath-provisioner
           image: cdkbot/hostpath-provisioner-amd64:1.0.0
           env:
             - name: NODE_NAME
@@ -46,6 +46,6 @@ metadata:
   name: snowpackage-site-hostpath
 #  annotations:
 #    storageclass.kubernetes.io/is-default-class: "true"
-provisioner: snowpackage-site/hostpath
+provisioner: snowpackage-site-hostpath-provisioner
 reclaimPolicy: Retain
 

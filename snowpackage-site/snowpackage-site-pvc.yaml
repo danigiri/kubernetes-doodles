@@ -10,4 +10,5 @@ spec:
   resources:
     requests:
       storage: 50Mi
-  storageClassName: snowpackage-site-hostpath
+# cannot make it witha custom provisioner, using the cluster default 
+#  storageClassName: snowpackage-site-hostpath
