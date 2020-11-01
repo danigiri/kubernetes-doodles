@@ -93,8 +93,8 @@ spec:
               exit 0
           fi
           cd {{workflow.parameters.appName}}
-          deployed_='<version>'$(curl -s '{{workflow.parameters.versionURL}}')'</version>'
-          local_=$(grep '<version>' pom.xml|head -1|tr -d '[:space:]')
+          deployed_=$(curl -s '{{workflow.parameters.versionURL}}')
+          local_='v'$(grep '<version>' pom.xml|head -1|tr -d '[:space:]'| sed 's/<version>//'|sed 's/<\/version>//')
           if [ "$deployed_" != "$local_" ]; then
               git fetch -q --all --tags 
               git checkout -q {{workflow.parameters.revision}}
