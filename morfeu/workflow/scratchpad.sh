@@ -3,10 +3,10 @@ kubectl port-forward svc/argocd-server -n argocd --address 192.168.1.30 8080:443
 argocd app create morfeu-deployment \
 	--repo https://github.com/danigiri/kubernetes-doodles.git \
 	--path morfeu \
-	--dest-namespace morfeu 
+	--dest-namespace morfeu \
 	--dest-server https://kubernetes.default.svc \
 	--auto-prune \
-	-sync-policy automated \
+	--sync-policy automated \
 	--sync-option CreateNamespace=true
 
 # list actions
