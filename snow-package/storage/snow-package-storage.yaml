@@ -43,3 +43,5 @@ metadata:
 #  annotations:
 #    storageclass.kubernetes.io/is-default-class: "true"
 provisioner: snow-package/hostpath
+reclaimPolicy: Retain
+
