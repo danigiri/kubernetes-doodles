@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  generateName: snowpackage-site-workflow-            # name of the workflow spec
+  namespace: argo
+spec:
+  schedule: "7/10 18-23,0-2 * * *"
+  concurrencyPolicy: Forbid
+  workflowSpec:
+    entrypoint: cicd-start
+    arguments:
+      parameters:
+      - name: registry
+        value: registry.container-registry.svc.cluster.local:5000
+      - name: repo							# no protocol in front!
+        value: github.com/danigiri/snowpackage-site.git
+      - name: revision
+        value: master
+      - name: versionURL
+        value: snowpackage-site-service.morfeu.svc.cluster.local:8980/metadata/version.txt
+      - name: argocdServer
+        value: argocd-server.argocd.svc.cluster.local:443
+      - name: deploymentNamespace
+        value: snowpackage-site
+      - name: deploymentName
+        value: snow-package-deployment
+      - name: appName
+        value: snow-package
+    workflowTemplateRef:
+      name: build-workflow-template

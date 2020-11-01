@@ -46,6 +46,7 @@ metadata:
   name: snowpackage-site-hostpath
 #  annotations:
 #    storageclass.kubernetes.io/is-default-class: "true"
+# the value of provisioner is unknown
 provisioner: snowpackage-site-hostpath-provisioner
 reclaimPolicy: Retain
 

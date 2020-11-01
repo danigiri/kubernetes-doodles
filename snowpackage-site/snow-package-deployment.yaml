@@ -2,34 +2,34 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
     namespace: snowpackage-site
-    name: snowpackage-site
+    name: snow-package
     labels:
-        app: snowpackage-site
-        app.kubernetes.io/name: snowpackage-site
-        app.kubernetes.io/component: webapp
-        app.kubernetes.io/part-of: snowpackage-site
+        app: snow-package
+        app.kubernetes.io/name: snow-package
+        app.kubernetes.io/component: utility
+        app.kubernetes.io/part-of: morfeu
         app.kubernetes.io/managed-by: argocd
 spec:
     replicas: 1
     selector:
         matchLabels:
-            app: snowpackage-site
+            app: snow-package
     template:
         metadata:
             labels:
-                app: snowpackage-site
-                app.kubernetes.io/name: snowpackage-site
-                app.kubernetes.io/component: webapp
-                app.kubernetes.io/part-of: snowpackage-site
+                app: snow-package
+                app.kubernetes.io/name: snow-package
+                app.kubernetes.io/component: middleware
+                app.kubernetes.io/part-of: morfeu
                 app.kubernetes.io/managed-by: argocd
         spec:
             containers:
-              - image: localhost:32000/snowpackage-site:latest
-                name: snowpackage-site
+              - image: localhost:32000/snow-package:latest
+                name: snow-package
                 imagePullPolicy: Always
                 args: [" -D__RESOURCES_PREFIX=file:///site/src/snowpackage/ -D__PROXY_PREFIX=http://snowpackage-site:3010"]
                 ports:
-                - containerPort: 3010
+                  - containerPort: 8990
                 volumeMounts:
                   - name: snowpackage-site
                     mountPath: /site

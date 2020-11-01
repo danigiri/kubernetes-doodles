@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+    namespace: snowpackage-site
+    name: snow-package-service
+    labels:
+        app: snow-package
+spec:
+    ports:
+    - port: 3010
+      protocol: TCP
+      targetPort: 3010
+    selector:
+        app: snow-package
+    type: ClusterIP
