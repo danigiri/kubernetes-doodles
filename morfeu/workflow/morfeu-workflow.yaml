@@ -23,7 +23,7 @@ spec:
       - name: deploymentNamespace
         value: morfeu
       - name: deploymentName
-        value: 'morfeu-deploy'
+        value: 'morfeu'
       - name: appName
         value: morfeu
     workflowTemplateRef:
