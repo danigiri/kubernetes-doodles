@@ -9,6 +9,8 @@ image:
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
   tag: "latest"
+  args: [" -D__RESOURCES_PREFIX=file:///var/lib/jetty/"]
+
 
 imagePullSecrets: []
 nameOverride: ""
