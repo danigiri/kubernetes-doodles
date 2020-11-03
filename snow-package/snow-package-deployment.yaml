@@ -27,7 +27,7 @@ spec:
               - image: localhost:32000/snow-package:latest
                 name: snow-package
                 imagePullPolicy: Always
-                args: [" -D__RESOURCES_PREFIX=file:///site/src/snowpackage/ -D__PROXY_PREFIX=http://snowpackage-site-service:3010"]
+                args: ["-D__RESOURCES_PREFIX=file:///site/src/snowpackage/", "-D__PROXY_PREFIX=http://snowpackage-site-service:3010"]
                 ports:
                   - containerPort: 8990
                 volumeMounts:
