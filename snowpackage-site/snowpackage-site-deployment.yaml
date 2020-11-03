@@ -28,6 +28,9 @@ spec:
                 name: snowpackage-site
                 imagePullPolicy: Always
                 args: [" -D__RESOURCES_PREFIX=file:///site/src/snowpackage/ -D__PROXY_PREFIX=http://snowpackage-site:3010"]
+                env:
+                  - name: HOSTNAME
+                    value: snow-package-site.local.test
                 ports:
                 - containerPort: 3010
                 volumeMounts:
