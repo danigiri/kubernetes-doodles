@@ -9,3 +9,7 @@ argocd app create snowpackage-site \
 	--dest-server https://kubernetes.default.svc \
 	--auto-prune \
 	--sync-policy automated
+
+
+# workflow
+argo -v cron create workflow/snowpackage-site-workflow.yaml

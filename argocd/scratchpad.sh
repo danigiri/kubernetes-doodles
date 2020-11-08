@@ -6,6 +6,8 @@ brew install argocd
 # dashboard
  kubectl port-forward svc/argocd-server -n argocd --address 192.168.1.30 8080:443
  
+ # password
+PASSWORD=$(kubectl get pods -n argocd -l app.kubernetes.io/name=argocd-server -o name | cut -d'/' -f 2)
 
 # CLI
 brew install argocd
