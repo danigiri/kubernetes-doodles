@@ -1,4 +1,4 @@
-argocd app create snow-package-deployment \
+argocd app create snow-package \
 	--repo https://github.com/danigiri/kubernetes-doodles.git \
 	--path snow-package \
 	--dest-namespace snow-package \
