@@ -24,7 +24,7 @@ spec:
         - name: deploymentNamespace
           value: snowpackage-site
         - name: deploymentName
-          value: snowpackage-site-deployment
+          value: snowpackage-site
         - name: appName
           value: snowpackage-site
       volumeClaimTemplates:

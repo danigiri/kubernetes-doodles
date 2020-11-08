@@ -1,13 +1,13 @@
 # console for CD
-kubectl port-forward svc/argocd-server -n argocd --address 192.168.1.30 8080:443
-argocd app create morfeu-deployment \
+kubectl create namespace morfeu
+argocd app create morfeu \
 	--repo https://github.com/danigiri/kubernetes-doodles.git \
-	--path morfeu \
+	--path morfeu/helm \
 	--dest-namespace morfeu \
-	--dest-server https://kubernetes.default.svc \
-	--auto-prune \
-	--sync-policy automated \
-	--sync-option CreateNamespace=true
+	--dest-server https://kubernetes.default.svc
+
+# syncing argocd app sync guestbook
+
 
 # list actions
 argocd app actions list morfeu-deploy --namespace morfeu --group apps --kind Deployment --insecure
