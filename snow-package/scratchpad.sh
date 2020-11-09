@@ -6,7 +6,7 @@ argocd app create snow-package \
 
 
 # configure morfeu to point at the snow package service
-argocd app set morfeu -p image.args='{-D__RESOURCES_PREFIX=http://snow-package-service.snowpackage-site.svc.cluster.local:8990/,-D__PROXY_PREFIX=http://snow-package-service.snowpackage-site.svc.cluster.local:8990}'
+argocd app set morfeu -p image.args='{-D__RESOURCES_PREFIX=http://snow-package.snowpackage-site.svc.cluster.local:8990/,-D__PROXY_PREFIX=http://snow-package.snowpackage-site.svc.cluster.local:8990}'
 
 # setup the workflow to build and deploy snow package
 argo -v cron create workflow/snow-package-workflow.yaml

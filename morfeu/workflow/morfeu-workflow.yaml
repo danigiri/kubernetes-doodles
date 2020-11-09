@@ -8,6 +8,7 @@ spec:
   concurrencyPolicy: Forbid
   workflowSpec:
     entrypoint: cicd-start
+    parallelism: 1
     arguments:
       parameters:
       - name: registry
