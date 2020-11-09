@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
     namespace: snowpackage-site
-    name: snow-package-service
+    name: snow-package
     labels:
         app: snow-package
 spec:
