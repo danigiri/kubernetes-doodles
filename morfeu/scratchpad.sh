@@ -15,7 +15,7 @@ argocd app actions list morfeu-deploy --namespace morfeu --group apps --kind Dep
 # workflow for CI
 # secret
 kubectl get pods -n argocd -l app.kubernetes.io/name=argocd-server -o name | cut -d'/' -f 2
-kubectl -n argo create secret generic argocd-secret --from-literal=admin.password=
+kubectl -n argo create secret generic argocd-secret --from-literal=admin.password=$PASSWORD
 # workflow
 argo -v cron create workflow/morfeu-workflow.yaml
 

@@ -2,7 +2,23 @@
 # bootstrap
 
 kubectl create ns argo
-kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/stable/manifests/quick-start-postgres.yaml
+# https://github.com/argoproj/argo-workflows/releases
+export ARGO_WORKFLOWS_VERSION=v3.5.8
+kubectl apply -n argo -f "https://github.com/argoproj/argo-workflows/releases/download/${ARGO_WORKFLOWS_VERSION}/quick-start-minimal.yaml"
+
+# this will have created all the necessary pods, this includes minio
+#      accessKeySecret:
+#        name: my-minio-cred
+#        key: accesskey
+#      secretKeySecret:
+#        name: my-minio-cred
+#        key: secretkey
+
+# list workflows
+argo list -n argo
+
+# port forward, it shows UI https://192.168.1.30:2746/
+kubectl -n argo port-forward service/argo-server --address 192.168.1.30 2746:2746
 
 
 argocd app create argo \
