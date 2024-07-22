@@ -15,6 +15,8 @@ spec:
         value: registry.container-registry.svc.cluster.local:5000
       - name: repo							# no protocol in front!
         value: github.com/danigiri/morfeu.git
+      - name: appDescriptionPath
+        value: morfeu/helm
       - name: revision
         value: master
       - name: versionURL
