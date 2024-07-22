@@ -139,8 +139,17 @@ spec:
           - '-x'
         source: |
           argocd login {{workflow.parameters.argocdServer}} --username admin --password $ARGOCD_PASSWORD --insecure
-          argocd app actions list {{workflow.parameters.deploymentName}} --namespace {{workflow.parameters.deploymentNamespace}} --group apps --kind Deployment --insecure
-          argocd app actions run {{workflow.parameters.deploymentName}} restart --namespace {{workflow.parameters.deploymentNamespace}} --group apps --kind Deployment --insecure
+          if [ $? -ne 0 ]; then
+            argocd app create morfeu \
+              --repo https://github.com/danigiri/kubernetes-doodles.git \
+              --path morfeu/helm \
+              --dest-namespace morfeu \
+              --dest-server https://kubernetes.default.svc
+             argocd app sync morfeu
+           else
+            argocd app actions list {{workflow.parameters.deploymentName}} --namespace {{workflow.parameters.deploymentNamespace}} --group apps --kind Deployment --insecure
+            argocd app actions run {{workflow.parameters.deploymentName}} restart --namespace {{workflow.parameters.deploymentNamespace}} --group apps --kind Deployment --insecure
+          fi
         env:
           - name: ARGOCD_PASSWORD
             valueFrom:

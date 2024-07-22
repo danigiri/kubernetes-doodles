@@ -12,8 +12,10 @@ Make sure the basic add-ons like dns, storage, registry and ingress are enabled
 # Building Morfeu
 
 ## Install main components
-First install argo workflows following the scratchpad at `argo/scratchpad.sh`
-Next install argocd following the scratchpad at `argocd/scratchpad.sh`
+First install argocd following the installation instructions in `argocd/scratchpad.sh`
+Secondly install argo workflows following the scratchpad at `argo/scratchpad.sh`
+Next, create the target namespace, for instance:
+	`kubectl create namespace morfeu`
 
 
 ## Main workflow
