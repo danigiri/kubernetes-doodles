@@ -4,7 +4,7 @@ metadata:
   generateName: morfeu-workflow-            # name of the workflow spec
   namespace: argo
 spec:
-  schedule: "*/10 18-23,0-2 * * *"
+  schedule: "*/30 18-23,0-2 * * *"
   concurrencyPolicy: Forbid
   workflowSpec:
     entrypoint: cicd-start
@@ -16,7 +16,7 @@ spec:
       - name: repo							# no protocol in front!
         value: github.com/danigiri/morfeu.git
       - name: appDescriptionPath
-        value: morfeu/helm
+        value: src/main/resources/helm
       - name: revision
         value: master
       - name: versionURL
