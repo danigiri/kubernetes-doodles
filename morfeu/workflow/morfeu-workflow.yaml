@@ -4,7 +4,7 @@ metadata:
   generateName: morfeu-workflow-            # name of the workflow spec
   namespace: argo
 spec:
-  schedule: "*/30 18-23,0-2 * * *"
+  schedule: "*/20 18-23,0-2 * * *"
   concurrencyPolicy: Forbid
   workflowSpec:
     entrypoint: cicd-start
