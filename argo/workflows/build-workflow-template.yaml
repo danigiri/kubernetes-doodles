@@ -139,6 +139,7 @@ spec:
           - '-x'
         source: |
           argocd login {{workflow.parameters.argocdServer}} --username admin --password $ARGOCD_PASSWORD --insecure
+          argocd app list | grep -q morfeu
           if [ $? -ne 0 ]; then
             argocd app create morfeu \
               --repo https://github.com/danigiri/kubernetes-doodles.git \
