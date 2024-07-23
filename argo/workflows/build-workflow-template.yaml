@@ -142,7 +142,7 @@ spec:
           - sh
           - '-x'
         source: |
-          argocd login {{workflow.parameters.argocdServer}} --username admin --password $ARGOCD_PASSWORD --insecure
+          argocd login {{workflow.parameters.argocdServer}} --username admin --password $ARGOCD_PASSWORD --plaintext
           argocd app list | grep -q {{workflow.parameters.appName}}
           if [ $? -ne 0 ]; then
             argocd app create {{workflow.parameters.appName}} \
@@ -152,8 +152,8 @@ spec:
               --dest-server {{workflow.parameters.clusterURL}}
              argocd app sync {{workflow.parameters.appName}}
            else
-            argocd app actions list {{workflow.parameters.deploymentName}} --namespace {{workflow.parameters.deploymentNamespace}} --group apps --kind Deployment --insecure
-            argocd app actions run {{workflow.parameters.deploymentName}} restart --namespace {{workflow.parameters.deploymentNamespace}} --group apps --kind Deployment --insecure
+            argocd app actions list {{workflow.parameters.deploymentName}} --namespace {{workflow.parameters.deploymentNamespace}} --group apps --kind Deployment
+            argocd app actions run {{workflow.parameters.deploymentName}} restart --namespace {{workflow.parameters.deploymentNamespace}} --group apps --kind Deployment
           fi
         env:
           - name: ARGOCD_PASSWORD

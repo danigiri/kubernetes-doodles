@@ -12,11 +12,10 @@ argocd app create morfeu \
 # use `argocd account update-password` to change
 kubectl -n argo create secret generic argocd-secret --from-literal=admin.password=$PASSWORD
 
-# workflow
-argo -v cron create workflow/morfeu-workflow.yaml
+# workflows
+argo -v cron create morfeu/workflow/morfeu-workflow.yaml
 
 # and sync
-
 argocd app sync morfeu
 
 
