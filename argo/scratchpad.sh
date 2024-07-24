@@ -16,6 +16,9 @@ kubectl apply -f argo/argo-ingress.yaml
 
 # this is the initial password, it should be changed
  PASSWORD=$(argocd admin initial-password -n argocd|head -1)
+# create secret in 'argo' namespace to access argocd so we can deploy applications using argocd
+kubectl -n argo create secret generic argocd-secret --from-literal=admin.password="$PASSWORD"
+
 
 argocd login argocd-grpc.local.test --username admin --password $PASSWORD --insecure --grpc-web
 argocd app create argo \
@@ -26,11 +29,12 @@ argocd app create argo \
 	--auto-prune \
 	--sync-policy automated
 
-# create secret in 'argo' namespace to access argocd so we can deploy applications using argocd
-kubectl -n argo create secret generic argocd-secret --from-literal=admin.password="$PASSWORD"
 
 # add build template so it can be reused by workflows
 argo -v template create argo/workflows/build-workflow-template.yaml
+
+# cleanup
+argo -v cron create argo/workflows/minio-cleanup-workflow.yaml
 
 # INSTALLATION ENDS HERE
 

@@ -22,7 +22,7 @@ Next, create the target namespace, for instance:
 There are the following steps
   * load-source
   * checkout
-  * buiold
+  * build
   * redeploy
 
 ### load-source step

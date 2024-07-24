@@ -9,10 +9,11 @@ metadata:
     ingress.kubernetes.io/app-root: "/"
     nginx.ingress.kubernetes.io/backend-protocol: HTTPS
 spec:
-  ingressClassName: nginx
+  # check the pod with the ingress controller and look for --ingress-class=<classname>, in v20 it's 'public'
+  ingressClassName: public
   tls:
   - hosts:
-    - workflows.apps.argoproj.io
+    - argo.local.test
     secretName: argo-workflows-secret
   rules:
   - host: argo.local.test
