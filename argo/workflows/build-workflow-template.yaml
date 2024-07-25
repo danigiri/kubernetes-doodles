@@ -63,15 +63,6 @@ spec:
             optional: true
             s3:
               key: '{{workflow.parameters.appName}}-source'
-              bucket: my-bucket
-              endpoint: minio:9000
-              insecure: true
-              accessKeySecret:
-                name: my-minio-cred
-                key: accesskey
-              secretKeySecret:
-                name: my-minio-cred
-                key: secretkey
       container:
         image: alpine:3
         command:
@@ -179,16 +170,7 @@ spec:
             path: /source/{{workflow.parameters.appName}}-source
             s3:
               key: '{{workflow.parameters.appName}}-source'
-              bucket: my-bucket
-              endpoint: minio:9000
-              insecure: true
-              accessKeySecret:
-                name: my-minio-cred
-                key: accesskey
-              secretKeySecret:
-                name: my-minio-cred
-                key: secretkey
-    
+
 #        image: frolvlad/alpine-bash
 #        command: ["/bin/bash", "-c"]
 #        args: ["cd /src && pwd && ls -l && cd / && pwd && ls -l && cd /mnt && pwd && ls -l"]
