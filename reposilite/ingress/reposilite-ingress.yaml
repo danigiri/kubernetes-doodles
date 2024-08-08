@@ -1,0 +1,17 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: reposilite-ingress
+  namespace: reposilite
+spec:
+  rules:
+  - host: reposilite.h0.local.test
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: reposilite
+            port:
+              name: http

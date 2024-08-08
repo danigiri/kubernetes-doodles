@@ -10,14 +10,14 @@ kubectl apply -n argocd -f argocd/install-patched.yaml
 # expose argo cd, two options:
 # A) either ingress (https://argo-cd.readthedocs.io/en/stable/operator-manual/ingress/)
 # in this case, going for two ingress controller entries
-kubectl apply -f argocd/argocd-ingress.yaml
-kubectl apply -f argocd/argocd-grpc-ingress.yaml
+kubectl apply -f argocd/ingress/argocd-ingress.yaml
+kubectl apply -f argocd/ingress/argocd-grpc-ingress.yaml
 # this means we terminate TLS at the ingress and boot argocd without TLS
 # which means we also need to patch argocd to load without TLS (config map: argocd-cmd-params-cm)
 # https://kubernetes.io/docs/tasks/manage-kubernetes-objects/update-api-object-kubectl-patch/
 kubectl patch configmap argocd-cmd-params-cm -n argocd -p $'data:\n server.insecure: "true"'
 kubectl -n argocd scale deployment argocd-server --replicas=0
-sleep 30 # give some time to shutdown
+sleep 20 # give some time to shutdown
 kubectl -n argocd scale deployment argocd-server --replicas=1
 
 
@@ -40,3 +40,5 @@ argocd login argocd-grpc.local.test --username admin --password $PASSWORD --inse
 
 # debugging argocd with interactive session
 kubectl run -n argo -i --tty --rm debug --image argoproj/argocd --restart=Never sh
+
+

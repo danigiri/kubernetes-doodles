@@ -16,7 +16,7 @@ spec:
     - argo.local.test
     secretName: argo-workflows-secret
   rules:
-  - host: argo.local.test
+  - host: argo.h0.local.test
     http:
       paths:
       - path: /

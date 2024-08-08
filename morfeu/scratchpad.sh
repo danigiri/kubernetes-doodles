@@ -6,7 +6,10 @@ argocd app create morfeu \
 	--dest-namespace morfeu \
 	--dest-server https://kubernetes.default.svc
 
+# default s3 artifact repository (minio)
+kubectl apply -f argo/configmaps/artifact-repositories.yaml
 
+# we need to make sure argo can access argocd
 # password (not add to history with the space in the beginning)
  PASSWORD=$(argocd admin initial-password -n argocd|head -1)
 # use `argocd account update-password` to change

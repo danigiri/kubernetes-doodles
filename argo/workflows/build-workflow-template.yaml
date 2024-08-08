@@ -35,6 +35,10 @@ spec:
         value: morfeu-service.morfeu.svc.cluster.local:8980/metadata/version.txt
       - name: argocdServer
         value: argocd-server.argocd.svc.cluster.local:443
+      - name: mavenCentralMirror
+        value: none
+      - name: mavenDownloadThreads
+        value: 5
       - name: deploymentNamespace
         value: morfeu
       - name: deploymentName
@@ -45,8 +49,8 @@ spec:
     templates:
     - name: cicd-start
       steps:
-      - - name: load-source
-          template: load-source
+      - - name: bootstrap
+          template: bootstrap
       - - name: checkout
           template: checkout
       - - name: build
@@ -55,14 +59,14 @@ spec:
       - - name: redeploy
           template: redeploy
           when: "'{{steps.checkout.outputs.result}}' == 'go'"
-    - name: load-source
+    - name: bootstrap
       inputs:
         artifacts:
           - name: source
             path: /source/{{workflow.parameters.appName}}-source
             optional: true
             s3:
-              key: '{{workflow.parameters.appName}}-source'
+             key: '{{workflow.parameters.appName}}-source'
       container:
         image: alpine:3
         command:
@@ -122,6 +126,7 @@ spec:
           - '--cache=true'
           - '--verbosity=info'
           - '--use-new-run'
+          - '--build-arg=MAVEN_CENTRAL_MIRROR={{workflow.parameters.mavenCentralMirror}}'
         volumeMounts:
           - name: source
             mountPath: /source
@@ -133,7 +138,7 @@ spec:
           - sh
           - '-x'
         source: |
-          argocd login {{workflow.parameters.argocdServer}} --username admin --password $ARGOCD_PASSWORD --plaintext
+          argocd login {{workflow.parameters.argocdServer}} --username admin --password $ARGOCD_PASSWORD --plaintext --insecure
           argocd app list | grep -q {{workflow.parameters.appName}}
           if [ $? -ne 0 ]; then
             argocd app create {{workflow.parameters.appName}} \

@@ -23,6 +23,8 @@ spec:
         value: morfeu-service.morfeu.svc.cluster.local:8980/metadata/version.txt
       - name: argocdServer
         value: argocd-server.argocd.svc.cluster.local:443
+      - name: mavenCentralMirror
+        value: http://reposilite.reposilite:8080/maven-central
       - name: deploymentNamespace
         value: morfeu
       - name: deploymentName

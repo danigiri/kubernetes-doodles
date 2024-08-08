@@ -1,0 +1,12 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: reposilite-env
+  namespace: reposilite
+data:
+  REPOSILITE_LOCAL_BUCKET: maven-repo
+  REPOSILITE_LOCAL_ENDPOINT: http://minio.argo:9000 # your minio endpoint
+  REPOSILITE_LOCAL_ACCESS_KEY: your-access-key
+  REPOSILITE_SECRET_KEY: your-secret-key
+  REPOSILITE_LOCAL_REGION: us-east-1 # not used
+# THIS IS IGNORED

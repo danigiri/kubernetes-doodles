@@ -1,11 +1,10 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: argocd-server-http-ingress
+  name: argocd-server-grpc-ingress
   namespace: argocd
   annotations:
-    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+    nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
 spec:
   # check the pod with the ingress controller and look for --ingress-class=<classname>, in v20 it's 'public'
   ingressClassName: public
@@ -18,9 +17,9 @@ spec:
           service:
             name: argocd-server
             port:
-              name: http
-    host: argocd.local.test
+              name: https
+    host: argocd-grpc.h0.local.test
   tls:
   - hosts:
-    -  argocd.local.test
-    secretName: argocd-ingress-http
+    - argocd-grpc.h0.local.test
+    secretName: argocd-ingress-grpc
