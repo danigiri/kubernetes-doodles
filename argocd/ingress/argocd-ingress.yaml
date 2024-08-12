@@ -19,7 +19,7 @@ spec:
             name: argocd-server
             port:
               name: http
-    host: argocd.local.test
+    host: argocd.h0.local.test
   tls:
   - hosts:
     -  argocd.h0.local.test
