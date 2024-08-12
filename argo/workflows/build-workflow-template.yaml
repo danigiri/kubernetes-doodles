@@ -4,25 +4,25 @@ metadata:
   name: build-workflow-template
   namespace: argo
 spec:
-    entrypoint: cicd-start
-    parallelism: 1                            # only one instance of the workflow at the time
-    volumeClaimTemplates:
-      - metadata:
-          name: source
-        spec:
-          accessModes: [ "ReadWriteMany" ]
-          resources:
-            requests:
-              storage: 10Mi
-    volumes:
-      - name: argocd-secrets-vol
-        secret:
-          secretName: argocd-secret
-    onExit: save-code
-    arguments:
-      parameters:
+  entrypoint: cicd-start
+  parallelism: 1                            # only one instance of the workflow at the time
+  volumeClaimTemplates:
+    - metadata:
+        name: source
+      spec:
+        accessModes: [ "ReadWriteMany" ]
+        resources:
+          requests:
+            storage: 10Mi
+  volumes:
+    - name: argocd-secrets-vol
+      secret:
+        secretName: argocd-secret
+  onExit: save-code
+  arguments:
+    parameters:
       - name: clusterURL # K8s cluster URL
-        value: https://kubernetes.default.svc  
+        value: https://kubernetes.default.svc
       - name: registry
         value: registry.container-registry.svc.cluster.local:5000
       - name: repo							  # no protocol in front!
@@ -41,140 +41,157 @@ spec:
         value: 5
       - name: deploymentNamespace
         value: morfeu
+      - name: namespaceLabel
+        value: production
       - name: deploymentName
         value: 'morfeu-deploy'
       - name: appName
         value: morfeu
 
-    templates:
-    - name: cicd-start
-      steps:
-      - - name: bootstrap
-          template: bootstrap
-      - - name: checkout
-          template: checkout
-      - - name: build
-          template: build
-          when: "'{{steps.checkout.outputs.result}}' == 'go'"
-      - - name: redeploy
-          template: redeploy
-          when: "'{{steps.checkout.outputs.result}}' == 'go'"
-    - name: bootstrap
-      inputs:
-        artifacts:
-          - name: source
-            path: /source/{{workflow.parameters.appName}}-source
-            optional: true
-            s3:
-             key: '{{workflow.parameters.appName}}-source'
-      container:
-        image: alpine:3
-        command:
-          - mkdir
-          - -pv
-          - /source/{{workflow.parameters.appName}}-source
-        volumeMounts:
-          - name: source
-            mountPath: /source
+  templates:
+  - name: cicd-start
+    steps:
+    - - name: create-namespace
+        template: create-namespace
+    - - name: bootstrap-source
+        template: bootstrap-source
+    - - name: checkout
+        template: checkout
+    - - name: build
+        template: build
+        when: "'{{steps.checkout.outputs.result}}' == 'go'"
+    - - name: redeploy
+        template: redeploy
+        when: "'{{steps.checkout.outputs.result}}' == 'go'"
 
-    - name: checkout
-      script:
-        image: alpine:3 # we curl the version from the live pod, compare it with the pom.xml contents
-        command:
-          - sh
-        source: |
-          apk -q add git curl
-          cd /source/{{workflow.parameters.appName}}-source
-          if [ ! -d {{workflow.parameters.appName}} ]; then
-              git clone -q https://{{workflow.parameters.repo}} 
-              cd {{workflow.parameters.appName}} && git checkout -q {{workflow.parameters.revision}}
-              echo go
-              exit 0
-          fi
-          cd {{workflow.parameters.appName}}
-          deployed_=$(curl -s '{{workflow.parameters.versionURL}}')
-          local_='v'$(grep '<version>' pom.xml|head -1|tr -d '[:space:]'| sed 's/<version>//'|sed 's/<\/version>//')
-          if [ "$deployed_" != "$local_" ]; then
-              git fetch -q --all --tags 
-              git checkout -q {{workflow.parameters.revision}}
-              git pull -q
-              echo 'go'
-              exit 0
-          fi
-          changed_=0
-          git fetch -q --all --tags
-          git checkout -q {{workflow.parameters.revision}}
-          git status | grep -q 'Your branch is behind' && changed_=1
-          if [ $changed_ -eq 1 ]; then
-              git pull -q
-              echo 'go'
-          else
-              echo 'stop'
-          fi
-        volumeMounts:
-          - name: source
-            mountPath: /source
+  - name: create-namespace
+    resource:
+      action: create
+      manifest: |
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: {{workflow.parameters.deploymentNamespace}}
+                labels:
+                  name: {{workflow.parameters.namespaceLabel}}
 
-    - name: build
-      container:
-        image: gcr.io/kaniko-project/executor:latest
-        args:
-          - '--dockerfile=Dockerfile'
-          - '--context=dir:///source/{{workflow.parameters.appName}}-source/{{workflow.parameters.appName}}'
-          - '--destination={{workflow.parameters.registry}}/{{workflow.parameters.appName}}'  # :{{workflow.uid}}
-          - '--insecure'
-          - '--cache=true'
-          - '--verbosity=info'
-          - '--use-new-run'
-          - '--build-arg=MAVEN_CENTRAL_MIRROR={{workflow.parameters.mavenCentralMirror}}'
-        volumeMounts:
-          - name: source
-            mountPath: /source
+  - name: bootstrap-source
+    inputs:
+      artifacts:
+        - name: source
+          path: /source/{{workflow.parameters.appName}}-source
+          optional: true
+          s3:
+            key: '{{workflow.parameters.appName}}-source'
+    container:
+      image: alpine:3
+      command:
+        - mkdir
+        - -pv
+        - /source/{{workflow.parameters.appName}}-source
+      volumeMounts:
+        - name: source
+          mountPath: /source
 
-    - name: redeploy
-      script:
-        image: argoproj/argocd
-        command:
-          - sh
-          - '-x'
-        source: |
-          argocd login {{workflow.parameters.argocdServer}} --username admin --password "$ARGOCD_PASSWORD" --insecure --plaintext
-          argocd app list | grep -q {{workflow.parameters.appName}}
-          if [ $? -ne 0 ]; then
-            argocd app create {{workflow.parameters.appName}} \
-              --repo https://{{workflow.parameters.repo}} \
-              --path {{workflow.parameters.appDescriptionPath}} \
-              --dest-namespace {{workflow.parameters.deploymentNamespace}} \
-              --dest-server {{workflow.parameters.clusterURL}}
-           else
-            argocd app actions list {{workflow.parameters.deploymentName}} --namespace {{workflow.parameters.deploymentNamespace}} --group apps --kind Deployment
-            argocd app actions run {{workflow.parameters.deploymentName}} restart --namespace {{workflow.parameters.deploymentNamespace}} --group apps --kind Deployment
-          fi
-          argocd app sync {{workflow.parameters.appName}}
-        env:
-          - name: ARGOCD_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: argocd-secret
-                key: admin.password
-        volumeMounts:
-          - name: argocd-secrets-vol
-            readOnly: true
-            mountPath: '/secrets/' # /secrets/.secret-file ???
-    - name: save-code
-      container:
-        image: alpine:3
-        command:
-          - "true"
-        volumeMounts:
-          - name: source
-            mountPath: /source
-      outputs:
-        artifacts:
-          - name: source
-            path: /source/{{workflow.parameters.appName}}-source
-            s3:
-              key: '{{workflow.parameters.appName}}-source'
+  - name: checkout
+    script:
+      image: alpine:3 # we curl the version from the live pod, compare it with the pom.xml contents
+      command:
+        - sh
+      source: |
+        apk -q add git curl
+        cd /source/{{workflow.parameters.appName}}-source
+        if [ ! -d {{workflow.parameters.appName}} ]; then
+          git clone -q https://{{workflow.parameters.repo}}
+            cd {{workflow.parameters.appName}} && git checkout -q {{workflow.parameters.revision}}
+          echo go
+            exit 0
+        fi
+        cd {{workflow.parameters.appName}}
+        deployed_=$(curl -s '{{workflow.parameters.versionURL}}')
+        local_='v'$(grep '<version>' pom.xml|head -1|tr -d '[:space:]'| sed 's/<version>//'|sed 's/<\/version>//')
+        if [ "$deployed_" != "$local_" ]; then
+            git fetch -q --all --tags
+            git checkout -q {{workflow.parameters.revision}}
+            git pull -q
+            echo 'go'
+            exit 0
+        fi
+        changed_=0
+        git fetch -q --all --tags
+        git checkout -q {{workflow.parameters.revision}}
+        git status | grep -q 'Your branch is behind' && changed_=1
+        if [ $changed_ -eq 1 ]; then
+            git pull -q
+            echo 'go'
+        else
+            echo 'stop'
+        fi
+      volumeMounts:
+        - name: source
+          mountPath: /source
+
+  - name: build
+    container:
+      image: gcr.io/kaniko-project/executor:latest
+      args:
+        - '--dockerfile=Dockerfile'
+        - '--context=dir:///source/{{workflow.parameters.appName}}-source/{{workflow.parameters.appName}}'
+        - '--destination={{workflow.parameters.registry}}/{{workflow.parameters.appName}}'  # :{{workflow.uid}}
+        - '--insecure'
+        - '--cache=true'
+        - '--verbosity=info'
+        - '--use-new-run'
+        - '--build-arg=MAVEN_CENTRAL_MIRROR={{workflow.parameters.mavenCentralMirror}}'
+      volumeMounts:
+        - name: source
+          mountPath: /source
+
+  - name: redeploy
+    script:
+      image: argoproj/argocd
+      command:
+        - sh
+        - '-x'
+      source: |
+        argocd login {{workflow.parameters.argocdServer}} --username admin --password "$ARGOCD_PASSWORD" --insecure --plaintext
+        argocd app list | grep -q {{workflow.parameters.appName}}
+        if [ $? -ne 0 ]; then
+          argocd app create {{workflow.parameters.appName}} \
+            --repo https://{{workflow.parameters.repo}} \
+            --path {{workflow.parameters.appDescriptionPath}} \
+            --dest-namespace {{workflow.parameters.deploymentNamespace}} \
+            --dest-server {{workflow.parameters.clusterURL}}
+        else
+          argocd app actions list {{workflow.parameters.deploymentName}} --namespace {{workflow.parameters.deploymentNamespace}} --group apps --kind Deployment
+          argocd app actions run {{workflow.parameters.deploymentName}} restart --namespace {{workflow.parameters.deploymentNamespace}} --group apps --kind Deployment
+        fi
+        argocd app sync {{workflow.parameters.appName}}
+      env:
+        - name: ARGOCD_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: argocd-secret
+              key: admin.password
+      volumeMounts:
+        - name: argocd-secrets-vol
+          readOnly: true
+          mountPath: '/secrets/' # /secrets/.secret-file ???
+
+  - name: save-code
+    container:
+      image: alpine:3
+      command:
+        - "true"
+      volumeMounts:
+        - name: source
+          mountPath: /source
+    outputs:
+      artifacts:
+        - name: source
+          path: /source/{{workflow.parameters.appName}}-source
+          s3:
+            key: '{{workflow.parameters.appName}}-source'
 
 #        image: frolvlad/alpine-bash
 #        command: ["/bin/bash", "-c"]

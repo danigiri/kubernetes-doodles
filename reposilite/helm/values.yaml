@@ -156,9 +156,9 @@ env:
 #        key: secret-key
 
 ## Environment variables from
-envFrom: # []
-  - configMapRef: # THIS IS IGNORED
-     name: reposilite-env
+envFrom: []
+#  - configMapRef: # THIS IS IGNORED
+#     name: reposilite-env
 # - secretRef:
 #     name: secret-name
 

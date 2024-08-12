@@ -5,7 +5,7 @@
 kubectl create ns argo
 export ARGO_WORKFLOWS_VERSION=v3.5.8
 kubectl apply -n argo -f "https://github.com/argoproj/argo-workflows/releases/download/${ARGO_WORKFLOWS_VERSION}/quick-start-minimal.yaml"
-
+sleep 10
 # either
 # kubectl apply -f argo/ingress/argo-ingress.yaml
 # or
@@ -17,12 +17,13 @@ kubectl apply -n argo -f "https://github.com/argoproj/argo-workflows/releases/do
 # kubectl -n argocd get secret argocd-secret -o jsonpath='{.data.admin\.password}' | base64 --decode
 kubectl -n argo create secret generic argocd-secret --from-literal=admin.password="$ARGOCD_PASSWORD"
 
-sleep 1
-
-argocd login "$ARGOCD_HOST" --username admin --password "$ARGOCD_PASSWORD" --insecure
+# assuming logged in
+# argocd login "$ARGOCD_HOST" --username admin --password "$ARGOCD_PASSWORD" --insecure
 argocd app create argo \
 	--repo https://github.com/danigiri/kubernetes-doodles.git \
 	--path argo \
+	--directory-recurse \
+	--directory-include "{configmaps/*,ingress/*}" \
 	--dest-namespace argo \
 	--dest-server https://kubernetes.default.svc \
 	--auto-prune \

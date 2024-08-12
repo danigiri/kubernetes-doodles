@@ -1,34 +1,23 @@
+# INSTALLATION
+# https://reposilite.com/guide/kubernetes#installing-with-custom-values
 
+kubectl create namespace reposilite
 
+helm repo add reposilite https://helm.reposilite.com/
+helm repo update
 
-# create a user in minio
-kubectl run -n argo -i --rm debug --image minio/mc --restart=Never \
---command -- /bin/sh -c '/bin/mc alias set minio http://minio:9000 admin password && /bin/mc admin user add minio reposilite reposilite1234'
 
 # this creates a bucket (note the default user and password in minio)
 kubectl run -n argo -i --rm debug --image minio/mc --restart=Never \
 --command -- /bin/sh -c '/bin/mc alias set minio http://minio:9000 admin password && /bin/mc mb minio/maven-repo'
 
-# list the bucket
-kubectl run -n argo -i --rm debug --image minio/mc --restart=Never \
---command -- /bin/sh -c '/bin/mc alias set minio http://minio:9000 admin password && /bin/mc ls minio/maven-repo'
-
 kubectl apply -f reposilite/ingress/reposilite-ingress.yaml
 
+# for some reason the ingress here does not apply
+helm install reposilite reposilite/reposilite -n reposilite -f reposilite/helm/values.yaml
+# give time to the service to start
+sleep 10
 
-
-# API endpoints
-brew install httpie
-# get configuration
-http --auth root:root-secret --auth-type basic GET http://reposilite.h0.local.test/api/settings/domain/maven
-jq '.repositories[.repositories |length] |= . + {}' 
-# update configuration
-http --auth root:root-secret --auth-type basic PUT http://reposilite.h0.local.test/api/settings/domain/maven
-
-# run some commands
-kubectl run -n reposilite -i --tty --rm debug --image alpine/httpie --restart=Never --command /usr/local/bin/http --ignore-stdin
-
-# oneliner to create mirror
 kubectl run --quiet -n reposilite -i --rm getconfig --image alpine/httpie --restart=Never --command -- /usr/local/bin/http --auth root:root-secret --auth-type basic --ignore-stdin GET http://reposilite.reposilite:8080/api/settings/domain/maven | \
 jq '.repositories[.repositories |length] |= . + {
       "id": "maven-central",
