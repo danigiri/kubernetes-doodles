@@ -1,0 +1,37 @@
+apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  generateName: container-registry-cleanup-workflow-            # name of the workflow spec
+  namespace: argo
+spec:
+  schedule: "1 5 * * *"
+  concurrencyPolicy: Forbid
+  workflowSpec:
+    entrypoint: registry-cleanup
+    parallelism: 1                            # only one instance of the workflow at the time
+    arguments:
+      parameters:
+      - name: command
+        value: /bin/registry
+      - name: arguments
+        value: garbage-collect /etc/docker/registry/config.yml -m
+      - name: registryPath
+        value: /var/lib/registry/docker/registry/v2/
+    templates:
+    - name: registry-cleanup
+      steps:
+      - - name: cleanup
+          template: cleanup
+    - name: cleanup
+      script:
+        image: bitnami/kubectl
+        command:
+          - sh
+          - '-x'
+        source: |
+          kubectl -n container-registry auth can-i create pods/exec
+          kubectl -n container-registry exec svc/registry -- du -sh {{workflow.parameters.registryPath}}
+          kubectl -n container-registry exec svc/registry \
+            -- /bin/registry garbage-collect /etc/docker/registry/config.yml -m
+          kubectl -n container-registry exec svc/registry -- du -sh {{workflow.parameters.registryPath}}
+ 
