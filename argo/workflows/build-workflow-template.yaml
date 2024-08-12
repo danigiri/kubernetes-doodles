@@ -138,7 +138,7 @@ spec:
           - sh
           - '-x'
         source: |
-          argocd login {{workflow.parameters.argocdServer}} --username admin --password $ARGOCD_PASSWORD --plaintext --insecure
+          argocd login {{workflow.parameters.argocdServer}} --username admin --password "$ARGOCD_PASSWORD" --insecure --plaintext
           argocd app list | grep -q {{workflow.parameters.appName}}
           if [ $? -ne 0 ]; then
             argocd app create {{workflow.parameters.appName}} \
@@ -146,11 +146,11 @@ spec:
               --path {{workflow.parameters.appDescriptionPath}} \
               --dest-namespace {{workflow.parameters.deploymentNamespace}} \
               --dest-server {{workflow.parameters.clusterURL}}
-             argocd app sync {{workflow.parameters.appName}}
            else
             argocd app actions list {{workflow.parameters.deploymentName}} --namespace {{workflow.parameters.deploymentNamespace}} --group apps --kind Deployment
             argocd app actions run {{workflow.parameters.deploymentName}} restart --namespace {{workflow.parameters.deploymentNamespace}} --group apps --kind Deployment
           fi
+          argocd app sync {{workflow.parameters.appName}}
         env:
           - name: ARGOCD_PASSWORD
             valueFrom:
@@ -159,8 +159,8 @@ spec:
                 key: admin.password
         volumeMounts:
           - name: argocd-secrets-vol
-            mountPath: '/secrets/'
-
+            readOnly: true
+            mountPath: '/secrets/' # /secrets/.secret-file ???
     - name: save-code
       container:
         image: alpine:3
