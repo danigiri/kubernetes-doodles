@@ -32,7 +32,7 @@ spec:
       - name: revision
         value: master
       - name: versionURL
-        value: morfeu-service.morfeu.svc.cluster.local:8980/metadata/version.txt
+        value: morfeu.morfeu:8980/metadata/version.txt
       - name: argocdServer
         value: argocd-server.argocd.svc.cluster.local:443
       - name: mavenCentralMirror
@@ -41,8 +41,6 @@ spec:
         value: 5
       - name: deploymentNamespace
         value: morfeu
-      - name: namespaceLabel
-        value: production
       - name: deploymentName
         value: 'morfeu-deploy'
       - name: appName
@@ -65,15 +63,16 @@ spec:
         when: "'{{steps.checkout.outputs.result}}' == 'go'"
 
   - name: create-namespace
-    resource:
-      action: create
-      manifest: |
-              apiVersion: v1
-              kind: Namespace
-              metadata:
-                name: {{workflow.parameters.deploymentNamespace}}
-                labels:
-                  name: {{workflow.parameters.namespaceLabel}}
+    script:
+      image: bitnami/kubectl
+      command:
+        - sh
+        - '-x'
+      source: |
+        result=$(kubectl get ns {{workflow.parameters.deploymentNamespace}} -o json | jq .status.phase -r)
+        if [ "$result" != 'Active' ]; then
+          kubectl create namespace {{workflow.parameters.deploymentNamespace}}
+        fi
 
   - name: bootstrap-source
     inputs:
@@ -102,21 +101,29 @@ spec:
         apk -q add git curl
         cd /source/{{workflow.parameters.appName}}-source
         if [ ! -d {{workflow.parameters.appName}} ]; then
+          # check out for the first time
           git clone -q https://{{workflow.parameters.repo}}
-            cd {{workflow.parameters.appName}} && git checkout -q {{workflow.parameters.revision}}
+          cd {{workflow.parameters.appName}} && git checkout -q {{workflow.parameters.revision}}
           echo go
-            exit 0
+          exit 0
         fi
         cd {{workflow.parameters.appName}}
         deployed_=$(curl -s '{{workflow.parameters.versionURL}}')
+        if [ $? -ne 0 ]; then
+           # could not fetch version
+           echo 'stop-no-version'
+           exit 0
+        fi
         local_='v'$(grep '<version>' pom.xml|head -1|tr -d '[:space:]'| sed 's/<version>//'|sed 's/<\/version>//')
-        if [ "$deployed_" != "$local_" ]; then
+        # we check if we got a version and if it's different, checkout the desired revision and deploy it
+        if [ "$deployed_" != "$local_" -q "$deployed_" != '' ]; then
             git fetch -q --all --tags
             git checkout -q {{workflow.parameters.revision}}
             git pull -q
             echo 'go'
             exit 0
         fi
+        # detect git changes
         changed_=0
         git fetch -q --all --tags
         git checkout -q {{workflow.parameters.revision}}

@@ -20,7 +20,7 @@ spec:
       - name: revision
         value: master
       - name: versionURL
-        value: morfeu-service.morfeu.svc.cluster.local:8980/metadata/version.txt
+        value: morfeu.morfeu:8980/metadata/version.txt
       - name: argocdServer
         value: argocd-server.argocd.svc.cluster.local:443
       - name: mavenCentralMirror
