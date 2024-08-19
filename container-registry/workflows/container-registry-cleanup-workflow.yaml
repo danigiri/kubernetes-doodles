@@ -4,7 +4,7 @@ metadata:
   generateName: container-registry-cleanup-workflow-            # name of the workflow spec
   namespace: argo
 spec:
-  schedule: "5 3-6 * * *"
+  schedule: "5 3 * * *"
   concurrencyPolicy: Forbid
   workflowSpec:
     entrypoint: registry-cleanup
@@ -23,6 +23,8 @@ spec:
       - - name: cleanup
           template: cleanup
     - name: cleanup
+      retryStrategy:
+        limit: "5"
       script:
         image: bitnami/kubectl
         command:
