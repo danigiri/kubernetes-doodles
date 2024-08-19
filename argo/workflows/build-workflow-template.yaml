@@ -116,7 +116,7 @@ spec:
         fi
         local_='v'$(grep '<version>' pom.xml|head -1|tr -d '[:space:]'| sed 's/<version>//'|sed 's/<\/version>//')
         # we check if we got a version and if it's different, checkout the desired revision and deploy it
-        if [ "$deployed_" != "$local_" -q "$deployed_" != '' ]; then
+        if [ "$deployed_" != "$local_" -a "$deployed_" != '' ]; then
             git fetch -q --all --tags
             git checkout -q {{workflow.parameters.revision}}
             git pull -q
