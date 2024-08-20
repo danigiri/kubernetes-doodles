@@ -9,6 +9,9 @@ spec:
   workflowSpec:
     entrypoint: registry-cleanup
     parallelism: 1                            # only one instance of the workflow at the time
+    podGC:
+      strategy: OnWorkflowCompletion
+      deleteDelayDuration: 24h
     arguments:
       parameters:
       - name: command
