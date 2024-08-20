@@ -11,7 +11,7 @@ spec:
     parallelism: 1                            # only one instance of the workflow at the time
     podGC:
       strategy: OnWorkflowCompletion
-      deleteDelayDuration: 24h
+      deleteDelayDuration: 48h0m0s
     arguments:
       parameters:
       - name: command

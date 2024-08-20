@@ -14,7 +14,7 @@ spec:
     # * OnWorkflowSuccess - delete pods when workflow is successful
     # Default: do not delete pods
     strategy: OnWorkflowCompletion
-    deleteDelayDuration: 24h
+    deleteDelayDuration: 12h0m0s
   volumeClaimTemplates:
     - metadata:
         name: source
