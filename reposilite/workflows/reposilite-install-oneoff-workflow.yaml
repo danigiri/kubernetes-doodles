@@ -6,10 +6,10 @@ metadata:
 spec:
   schedule: "* * * * *"
   concurrencyPolicy: Forbid
-  condition: "succeeded >= 1"
   workflowSpec:
     entrypoint: deploy-reposilite
     parallelism: 1                            # only one instance of the workflow at the time
+    condition: "succeeded >= 1"
     podGC:
       strategy: OnWorkflowCompletion
       deleteDelayDuration: 48h0m0s
