@@ -1,0 +1,172 @@
+apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  generateName: reposilite-install-oneoff-workflow-            # name of the workflow spec
+  namespace: argo
+spec:
+  schedule: "* * * * *"
+  concurrencyPolicy: Forbid
+  condition: "succeeded >= 1"
+  workflowSpec:
+    entrypoint: deploy-reposilite
+    parallelism: 1                            # only one instance of the workflow at the time
+    podGC:
+      strategy: OnWorkflowCompletion
+      deleteDelayDuration: 48h0m0s
+  volumes:
+    - name: argocd-secrets-vol
+      secret:
+        secretName: argocd-secret
+  arguments:
+    parameters:
+      - name: appName
+        value: reposilite
+      - name: repoName
+        value: kubernetes-doodles
+      - name: repo
+        value: github.com/danigiri/kubernetes-doodles.git
+      - name: appDescriptionPath              # directory where the helm/kustomize/,... files sit
+        value: reposilite
+      - name: helmValuesPath
+        value: reposilite/helm/values.yaml
+      - name: excludePaths
+        value: '{workflows/*,helm/*}'
+      - name: revision
+        value: master
+      - name: helmRepo
+        value: https://helm.reposilite.com/
+      - name: argocdServer
+        value: argocd-server.argocd.svc.cluster.local:443
+      - name: deploymentNamespace
+        value: reposilite
+
+  templates:
+  - name: deploy-reposilite
+    steps:
+    - - name: create-namespace
+        template: create-namespace
+    - - name: create-namespace
+        template: create-namespace
+    - - name: create-storage
+        template: create-storage
+    - - name: deploy-argo
+        template: deploy-argo
+    - - name: deploy-helm
+        template: deploy-helm
+    - - name: create-repos
+        template: create-repos
+        
+  - name: create-namespace
+    script:
+      image: bitnami/kubectl
+      command:
+        - sh
+        - '-x'
+      source: |
+        result=$(kubectl get ns {{workflow.parameters.deploymentNamespace}} -o json | jq .status.phase -r)
+        if [ "$result" != 'Active' ]; then
+          kubectl create namespace {{workflow.parameters.deploymentNamespace}}
+        fi
+  - name: create-storage
+    script:
+      image: minio/mc
+      command:
+        - sh
+        - '-x'
+      source: |
+        /bin/mc alias set minio http://minio:9000 admin password && /bin/mc mb minio/maven-repo
+  - name: deploy
+    script:
+      image: argoproj/argocd
+      command:
+        - sh
+        - '-x'
+      source: |
+        argocd login {{workflow.parameters.argocdServer}} --username admin --password "$ARGOCD_PASSWORD" --insecure --plaintext
+        argocd app list | grep -q {{workflow.parameters.appName}}
+        if [ $? -ne 0 ]; then
+          argocd app create {{workflow.parameters.appName}} \
+            --repo https://{{workflow.parameters.repo}} \
+            --path {{workflow.parameters.appDescriptionPath}} \
+            --directory-recurse
+            --directory-exclude '{{workflow.parameters.excludePaths}}'
+            --dest-namespace {{workflow.parameters.deploymentNamespace}} \
+            --dest-server {{workflow.parameters.clusterURL}}
+        fi
+        argocd app sync {{workflow.parameters.appName}}
+      env:
+        - name: ARGOCD_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: argocd-secret
+              key: admin.password
+      volumeMounts:
+        - name: argocd-secrets-vol
+          readOnly: true
+          mountPath: '/secrets/' # /secrets/.secret-file ???
+
+  - name: deploy-helm
+    script:
+      image: alpine:3 # we curl the version from the live pod, compare it with the pom.xml contents
+      command:
+        - sh
+        - '-x'
+      source: |
+        apk -q add git curl helm
+        git clone -q https://{{workflow.parameters.repo}}
+        cd {{workflow.parameters.repoName}}
+        git checkout -q {{workflow.parameters.revision}}
+        helm repo add reposilite {{workflow.parameters.helmRepo}}
+        helm repo update
+        helm install reposilite reposilite/reposilite -n reposilite -f {{workflow.parameters.helmValuesPath}}
+
+  - name: create-namespace
+    script:
+      image: alpine/httpie
+      command:
+        - sh
+        - '-x'
+      source: |-
+      apk -q add jq
+      /usr/local/bin/http --auth root:root-secret --auth-type basic --ignore-stdin GET http://reposilite.reposilite:8080/api/settings/domain/maven | \
+      jq \
+      ".repositories[.repositories |length] |= . + {
+      \"id\": \"maven-central\",
+      \"visibility\": "PUBLIC",
+      \"redeployment\": false,
+      \"preserveSnapshots\": false,
+      \"storageProvider\": {
+        \"type\": \"s3\",
+        \"bucketName\": \"maven-repo\",
+        \"endpoint\": \"http://minio.argo:9000\",
+        \"accessKey\": \"admin\",
+        \"secretKey\": \"password\",
+        \"region": \"us-east-1\"
+      },
+      \"storagePolicy\": \"PRIORITIZE_UPSTREAM_METADATA\",
+      \"metadataMaxAge\": 0,
+      \"proxied\": [
+        {
+          \"reference\": \"https://repo.maven.apache.org/maven2/\",
+          \"store\": true,
+          \"allowedGroups\": [],
+          \"allowedExtensions\": [
+            \".jar\",
+            \".war\",
+            \".pom\",
+            \".xml\",
+            \".module\",
+            \".md5\",
+            \".sha1\",
+            \".sha256\",
+            \".sha512\",
+            \".asc\",
+            \".zip\"
+          ],
+          \"connectTimeout\": 3,
+          \"readTimeout\": 15,
+          \"httpProxy\": \"\"
+        }
+      ]
+      }" \
+      | /usr/local/bin/http --auth root:root-secret --auth-type basic PUT http://reposilite.reposilite:8080/api/settings/domain/maven
