@@ -163,7 +163,8 @@ spec:
                  \".sha256\",
                  \".sha512\",
                  \".asc\",
-                 \".zip\"
+                 \".zip\",
+                 \".exe\"
                ],
                \"connectTimeout\": 3,
                \"readTimeout\": 15,
